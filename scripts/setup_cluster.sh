@@ -18,7 +18,7 @@ DATA_DIR=/scratch/"$USER"/data
 echo "### SETTING UP VIRTUAL ENVIRONMENT ON CN99 ###"
 ./setup_venv.sh
 
-# Download the data to 
+# Download the data 
 source "$SCRIPT_DIR"/../venv/bin/activate
 python3 "$SCRIPT_DIR"/download_data.py --root "$DATA_DIR"
 deactivate
@@ -30,6 +30,10 @@ ssh cn47 "
   source .profile
   cd $PWD;
   ./setup_venv.sh
+  source "$SCRIPT_DIR"/../venv/bin/activate
+  python3 "$SCRIPT_DIR"/download_data.py --root "$DATA_DIR"
+  deactivate
+
 "
 
 echo "### SETTING UP VIRTUAL ENVIRONMENT ON CN48 ###"
@@ -37,6 +41,9 @@ ssh cn48 "
   source .profile
   cd $PWD;
   ./setup_venv.sh
+  source "$SCRIPT_DIR"/../venv/bin/activate
+  python3 "$SCRIPT_DIR"/download_data.py --root "$DATA_DIR"
+  deactivate
 "
 
 # make a symlink to the data in order to directly access it from the root of the project
