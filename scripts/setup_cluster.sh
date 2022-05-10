@@ -48,4 +48,4 @@ ssh cn48 "
 
 # make a symlink to the data in order to directly access it from the root of the project
 mkdir -p "$SCRIPT_DIR"/../data
-ln -sfn /scratch/tberns/data/ "$SCRIPT_DIR"/../data
+ln -sfn "$DATA_DIR" "$SCRIPT_DIR"/../data
