@@ -1,5 +1,116 @@
+import numpy as np
+import utils
+from copy import deepcopy
+
+
+
+import torch as t
+import torch.functional as F
+import torch.nn as nn
+
+
 class Particle():
-    def __init__():
-        pass 
+    def __init__(self, min_layer: int, max_layer: int, max_pool_layer: int, width_in: int, height_in: int, channels_in: int,
+                 conv_prob: float, pool_prob: float, max_conv_kernels: int, max_ch_out: int, max_fc_neurons: int, dim_out: int):
+        self.min_layer = min_layer 
+        self.max_layer = max_layer
+        self.max_pool_layer = max_pool_layer
+        self.width_in = width_in 
+        self.height_in = height_in 
+        self.channels_in = channels_in
+        self.conv_prob = conv_prob
+        self.pool_prob = pool_prob
+        self.max_conv_kernels = max_conv_kernels
+        self.max_ch_out = max_ch_out
+        self.max_fc_neurons = max_fc_neurons
+        self.dim_out = dim_out
+        
+        self.layers = []
+        self.acc = None
+        self.vel = []
+        self.pBest = []
+        
+        # Initialize particle
+        self.initialization() 
+        
+        # Update initial velocity
+        for i in range(len(self.layers)):
+            if self.layers[i]["type"] != "fc":
+                self.vel.append({"type": "keep"})
+            else:
+                self.vel.append({"type": "keep_fc"})
+        
+        self.model = None
+        self.pBest = deepcopy(self)
     
+    def __str__(self):
+        string = ""
+        for z in range(len(self.layers)):
+            string = string + self.layers[z]["type"] + " | "
+        
+        return string
+        
+    def initialization(self):
+        out_channel = np.random.randint(3, self.max_out_ch)
+        conv_kernel = np.random.randint(3, self.max_conv_kernel)
+        
+        # First layer is always a convolution layer
+        self.layers.append({"type": "conv", "ou_c": out_channel, "kernel": conv_kernel})
+
+        conv_prob = self.conv_prob
+        pool_prob = conv_prob + self.pool_prob
+        fc_prob = pool_prob
+
+        for _ in range(1, self.depth):
+            if self.layers[-1]["type"] == "fc":
+                layer_type = 1.1
+            else:
+                layer_type = np.random.rand()
+
+            if layer_type < conv_prob:
+                self.layers = utils.add_conv(self.layers, self.max_out_ch, self.max_conv_kernel)
+
+            elif layer_type >= conv_prob and layer_type <= pool_prob:
+                self.layers, self.num_pool_layers = utils.add_pool(self.layers, self.num_pool_layers, self.max_pool_layers)
+            
+            elif layer_type >= fc_prob:
+                self.layers = utils.add_fc(self.layers, self.max_fc_neurons)
+            
+        self.layers[-1] = {"type": "fc", "ou_c": self.output_dim, "kernel": -1}
     
+    def velocity(self, cg):
+        pass
+    
+    def update(self):
+        pass
+    
+    def validate(self):
+        pass
+    
+    def model_compile(self):
+        list_layers = self.layers
+        self.model = nn.Sequential()
+        
+        for i in range(len(list_layers)):
+            if list_layers[i]["type"] == "conv":
+                pass
+
+            if list_layers[i]["type"] == "max_pool":
+                pass
+
+            if list_layers[i]["type"] == "avg_pool":
+                pass
+            
+            if list_layers[i]["type"] == "fc":
+                pass
+        
+    def model_fit(self):
+        pass
+    
+    def model_fit_complete(self):
+        pass
+    
+    def model_delete(self):
+        pass
+        
+        
