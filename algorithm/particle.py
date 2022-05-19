@@ -2,6 +2,7 @@ import numpy as np
 import utils
 from copy import deepcopy
 from tqdm import tqdm
+import torch.optim as optim
 
 import torch
 import torch.nn as nn
@@ -38,6 +39,9 @@ class Particle():
         self.acc = None
         self.vel = []
         self.pBest = []
+        
+     
+    
         
         # Initialize particle
         self.initialization() 
@@ -135,47 +139,26 @@ class Particle():
         
         for i in range(len(self.layers)):
             if self.layers[i]["type"] == "conv":
-                n_out_filters = list_layers[i]["ou_c"]
+                out_c = list_layers[i]["ou_c"]
                 kernel_size = list_layers[i]["kernel"]
                 
                 if i == 0:
-                    in_w = self.input_width
-                    in_h = self.input_height
+                    # in_w = self.input_width # Not needed ???
+                    # in_h = self.input_height # Not needed ???
                     in_c = self.input_channels
+                    list_layers.append(nn.Conv2d(in_c, out_c, kernel_size, stride=1, padding="same"))
                 else:
-                    # TODO: Store inputs sizes in dictionary
-                    in_w = None
-                    in_h = None
-                    in_c = None
-                    
-                # TODO: Store inputs sizes in dictionary
-                in_channels = None
-                out_channels = None
-                    
-                list_layers.append(nn.Conv2D(in_channels, kernel_size, stride=1, padding="same"))
-                list_layers.append(nn.BatchNorm2d(out_channels))
+                    list_layers.append(nn.LazyConv2d(out_c, kernel_size, stride=1, padding="same"))
+                                
+                list_layers.append(nn.LazyBatchNorm2d())
                 list_layers.append(nn.ReLu())
-
-                # if i == 0:
-                #     in_w = self.input_width
-                #     in_h = self.input_height
-                #     in_c = self.input_channels
-                #     self.model.add(Conv2D(n_out_filters, kernel_size, strides=(1,1), padding="same", data_format="channels_last", kernel_initializer='he_normal', bias_initializer='he_normal', activation=None, input_shape=(in_w, in_h, in_c)))
-                #     self.model.add(BatchNormalization())
-                #     self.model.add(Activation("relu"))
-                # else:
-                #     self.model.add(Dropout(dropout_rate))
-                #     self.model.add(Conv2D(n_out_filters, kernel_size, strides=(1,1), padding="same", kernel_initializer='he_normal', bias_initializer='he_normal', activation=None))
-                #     self.model.add(BatchNormalization())
-                #     self.model.add(Activation("relu"))
-                
 
             if self.layers[i]["type"] == "max_pool":
                 kernel_size = list_layers[i]["kernel"]
                 # TODO: Check kernel size, in their implementations (3,3) is always used
                 list_layers.append(nn.MaxPool2d(kernel_size=kernel_size, strides=2))
 
-             if list_layers[i]["type"] == "avg_pool":
+            if list_layers[i]["type"] == "avg_pool":
                 kernel_size = list_layers[i]["kernel"]
                 # TODO: Check kernel size, in their implementations (3,3) is always used
                 list_layers.append(nn.AvgPool2d(kernel_size=kernel_size, strides=2))
@@ -183,14 +166,12 @@ class Particle():
             if list_layers[i]["type"] == "fc":
                 if list_layers[i-1]["type"] != "fc":
                     list_layers.append(nn.Flatten())
+                    
+                out_features = self.layers[i]["ou_c"]
 
                 list_layers.append(nn.Dropout(dropout_rate))
-                
-                # TODO: Store in features in the dictionary
-                in_features = None
-                out_features = self.layers[i]["ou_c"]
-                list_layers.append(nn.Linear(in_features, out_features))
-                list_layers.append(nn.BatchNorm1d(out_features))
+                list_layers.append(nn.LazyLinear(out_features))
+                list_layers.append(nn.LazyBatchNorm1d())
 
                 if i == len(list_layers) - 1:
                     # list_layers.append(nn.Dense(list_layers[i]["ou_c"], kernel_initializer='he_normal', bias_initializer='he_normal', activation=None))
@@ -225,22 +206,22 @@ class Particle():
         loss = 0
         error = 0
         self.model.train()
-        for epoch in tqdm(range(epochs), desc=f"fitting particle\tloss: {loss}\terror: {error}"):
-            loss, error = self._epoch(loader)
+        
+        adam_opt = optim.Adam(lr=0.001, betas=(0.9, 0.999), weight_decay=0.0)
+        
+        for _ in tqdm(range(epochs), desc=f"fitting particle\tloss: {loss}\terror: {error}"):
+            loss, error = self._epoch(loader=loader, opt=adam_opt)
            
         return loss, 1 - error 
     
-    def model_evaluate(self, loader)
-        loss = 0
-        error = 0
+    def model_evaluate(self, loader):
         self.model.eval()
         loss, acc = self._epoch(loader)
+        return loss, acc 
         
-    
     def model_fit_complete(self, loader, epochs):
         # TODO: Check why a seperate method is used for this
-        
-        return self.model_fit(loader, epochs)
+        return self.model_fit(loader=loader, epochs=epochs)
     
     def model_delete(self):
         # This is used to free up memory during PSO training

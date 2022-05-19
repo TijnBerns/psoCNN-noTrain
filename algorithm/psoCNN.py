@@ -70,7 +70,7 @@ class psoCNN:
             print(self.population.particle[i])
 
             self.population.particle[i].model_compile(dropout_rate)
-            loss, acc = self.population.particle[i].model_fit(train_dl epochs=epochs) # <<<<<
+            _, acc = self.population.particle[i].model_fit(self.train_dl, epochs=epochs) # <<<<<
             self.population.particle[i].model_delete()
 
             self.population.particle[i].acc = acc
@@ -131,7 +131,7 @@ class psoCNN:
                         self.gBest = deepcopy(self.population.particle[j])
 
                         self.gBest.model_compile(dropout_rate)
-                        loss, acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
+                        _, acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
                         test_metrics = self.gBest.model.evaluate(self.test_dl)
                         self.gBest.model_delete()
                         gBest_test_acc = test_metrics[1]
@@ -152,7 +152,7 @@ class psoCNN:
         #         self.gBest.model.trainable_weights[i])
         # print("gBest's number of trainable parameters: " + str(trainable_count))
         
-        self.gBest.model_fit_complete(self.train_dl epochs=epochs)
+        self.gBest.model_fit_complete(self.train_dl, epochs=epochs)
 
         # return trainable_count
         return
@@ -160,7 +160,7 @@ class psoCNN:
     def evaluate_gBest(self):
         print("\nEvaluating gBest model on the test set...")
 
-        metrics = self.gBest.model_evaluate(test_dl)
+        metrics = self.gBest.model_evaluate(self.test_dl)
 
         print("\ngBest model loss in the test set: " +
               str(metrics[0]) + " - Test set accuracy: " + str(metrics[1]))
