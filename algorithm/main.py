@@ -4,8 +4,17 @@ import time
 import os
 import matplotlib
 import matplotlib.pyplot as plt
+import argparse
+
+
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--root", help="root path at which data is stored", type=str, default="../data/data")
+    args = parser.parse_args()
+    
+    
     ######## Algorithm parameters ##################
     
     dataset = "mnist"
@@ -55,7 +64,7 @@ if __name__ == '__main__':
                      conv_prob=probability_convolution, pool_prob=probability_pooling,
                      fc_prob=probability_fully_connected, max_conv_kernel=max_conv_kernel_size,
                      max_out_ch=max_conv_output_channels, max_fc_neurons=max_fully_connected_neurons,
-                     dropout_rate=dropout)
+                     dropout_rate=dropout, root=args.root)
 
         pso.fit(Cg=Cg, dropout_rate=dropout)
 

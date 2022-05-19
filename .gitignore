@@ -133,3 +133,5 @@ data/
 data
 venv/
 venv
+results/
+results
