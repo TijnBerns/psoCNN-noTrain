@@ -8,7 +8,6 @@ from torchvision.transforms import transforms
 
 from algorithm.fitness.lib.ntk import get_ntk_n
 from algorithm.particle import Particle
-import algorithm.utils
 
 
 def get_networks(n):
