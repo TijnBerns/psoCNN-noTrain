@@ -9,9 +9,8 @@ import torch.nn as nn
 
 class Particle():
     def __init__(self, min_layer, max_layer, max_pool_layers, input_width, input_height, input_channels, \
-        conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, output_dim):
-        self.device = "cpu"
-        
+        conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, output_dim, device):
+       
         self.min_layer = min_layer 
         self.max_layer = max_layer
         
@@ -40,9 +39,8 @@ class Particle():
         self.vel = []
         self.pBest = []
         
+        self.device = device
      
-    
-        
         # Initialize particle
         self.initialization() 
         
@@ -139,32 +137,32 @@ class Particle():
         
         for i in range(len(self.layers)):
             if self.layers[i]["type"] == "conv":
-                out_c = list_layers[i]["ou_c"]
-                kernel_size = list_layers[i]["kernel"]
+                out_c = self.layers[i]["ou_c"]
+                kernel_size = self.layers[i]["kernel"]
                 
                 if i == 0:
                     # in_w = self.input_width # Not needed ???
                     # in_h = self.input_height # Not needed ???
                     in_c = self.input_channels
-                    list_layers.append(nn.Conv2d(in_c, out_c, kernel_size, stride=1, padding="same"))
+                    list_layers.append(nn.Conv2d(in_c, out_c, kernel_size, stride=1, padding=1))
                 else:
-                    list_layers.append(nn.LazyConv2d(out_c, kernel_size, stride=1, padding="same"))
+                    list_layers.append(nn.LazyConv2d(out_c, kernel_size, stride=1, padding=1))
                                 
                 list_layers.append(nn.LazyBatchNorm2d())
-                list_layers.append(nn.ReLu())
+                list_layers.append(nn.ReLU())
 
             if self.layers[i]["type"] == "max_pool":
-                kernel_size = list_layers[i]["kernel"]
+                kernel_size = self.layers[i]["kernel"]
                 # TODO: Check kernel size, in their implementations (3,3) is always used
-                list_layers.append(nn.MaxPool2d(kernel_size=kernel_size, strides=2))
+                list_layers.append(nn.MaxPool2d(kernel_size=kernel_size, stride=2))
 
-            if list_layers[i]["type"] == "avg_pool":
-                kernel_size = list_layers[i]["kernel"]
+            if self.layers[i]["type"] == "avg_pool":
+                kernel_size = self.layers[i]["kernel"]
                 # TODO: Check kernel size, in their implementations (3,3) is always used
-                list_layers.append(nn.AvgPool2d(kernel_size=kernel_size, strides=2))
+                list_layers.append(nn.AvgPool2d(kernel_size=kernel_size, stride=2))
             
-            if list_layers[i]["type"] == "fc":
-                if list_layers[i-1]["type"] != "fc":
+            if self.layers[i]["type"] == "fc":
+                if self.layers[i-1]["type"] != "fc":
                     list_layers.append(nn.Flatten())
                     
                 out_features = self.layers[i]["ou_c"]
@@ -173,22 +171,27 @@ class Particle():
                 list_layers.append(nn.LazyLinear(out_features))
                 list_layers.append(nn.LazyBatchNorm1d())
 
-                if i == len(list_layers) - 1:
+                if i == len(self.layers[i]) - 1:
                     # list_layers.append(nn.Dense(list_layers[i]["ou_c"], kernel_initializer='he_normal', bias_initializer='he_normal', activation=None))
-                    list_layers.append(nn.Softmax())
+                    list_layers.append(nn.Softmax(dim=0))
                 else:
                     # self.model.add(Dense(list_layers[i]["ou_c"], kernel_initializer='he_normal', bias_initializer='he_normal', kernel_regularizer=regularizers.l2(0.01), activation=None))
-                    list_layers.append(nn.ReLu())
+                    list_layers.append(nn.ReLU())
             
         self.model = nn.Sequential(*list_layers)
     
     def _epoch(self, loader, opt=None):
-        for (x, y) in loader:
+        total_error = 0
+        total_loss = 0
+        loss = -1
+        desc = "validating particle" if opt is None else "training particle"
+        pbar = tqdm(loader, desc=desc) 
+        for (x, y) in pbar:
             # Prediction
             x, y = x.to(self.device), y.to(self.device)
-            yp = self.mod
+            yp = self.model(x)
             loss = nn.CrossEntropyLoss()(yp, y)
-            
+             
             # Backpropagate loss
             if opt is not None:
                 opt.zero_grad()
@@ -200,18 +203,24 @@ class Particle():
             total_error += (yp.max(dim=1)[1] != y).sum().item()
             total_loss += loss.item() * x.shape[0]
             
+            pbar.set_description(desc + f" loss: {loss:.2f}")
+            
         return total_loss / len(loader.dataset), total_error / len(loader.dataset) 
     
     def model_fit(self, loader, epochs):
         loss = 0
         error = 0
         self.model.train()
+        self.model = self.model.to(self.device)
         
-        adam_opt = optim.Adam(lr=0.001, betas=(0.9, 0.999), weight_decay=0.0)
-        
-        for _ in tqdm(range(epochs), desc=f"fitting particle\tloss: {loss}\terror: {error}"):
+        adam_opt = optim.Adam(self.model.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=0.0)
+
+        for _ in range(epochs):
             loss, error = self._epoch(loader=loader, opt=adam_opt)
            
+        if self.device != "cpu":
+            self.model = self.model.to("cpu")
+        
         return loss, 1 - error 
     
     def model_evaluate(self, loader):

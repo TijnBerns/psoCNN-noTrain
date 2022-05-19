@@ -4,10 +4,13 @@ import torchvision
 import argparse
 from population import Population
 from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 
 class psoCNN:
     def __init__(self, dataset, n_iter, pop_size, batch_size, epochs, min_layer, max_layer,
-                 conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, dropout_rate, root):
+                 conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, dropout_rate, root, device):
+
+        self.device = device
 
         self.pop_size = pop_size
         self.n_iter = n_iter
@@ -23,11 +26,10 @@ class psoCNN:
             input_channels = 1
             output_dim = 10
 
-            # TODO: Add transforms?
             self.train_ds = torchvision.datasets.MNIST(
-                root=root, train=True, download=False)
+                root=root, train=True, download=False, transform=transforms.ToTensor())
             self.test_ds = torchvision.datasets.MNIST(
-                root=root, train=False, download=False)
+                root=root, train=False, download=False, transform=transforms.ToTensor())
         
         else: 
             raise NotImplementedError
@@ -45,7 +47,7 @@ class psoCNN:
 
         print("Initializing population...")
         self.population = Population(pop_size, min_layer, max_layer, input_width, input_height, input_channels,
-                                     conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, output_dim)
+                                     conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, output_dim, self.device)
 
         print("Verifying accuracy of the current gBest...")
         print(self.population.particle[0])

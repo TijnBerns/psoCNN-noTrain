@@ -5,6 +5,7 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 import argparse
+import torch
 
 
 
@@ -12,11 +13,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--root", help="root path at which data is stored", type=str, default="../data/data")
+    parser.add_argument(
+        "--gpu", help="whether to use gpu or not", type=int, default=0)
     args = parser.parse_args()
     
     
     ######## Algorithm parameters ##################
     
+    if torch.cuda.is_available() and args.gpu != 0:
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
     dataset = "mnist"
     
     number_runs = 10
@@ -55,6 +63,8 @@ if __name__ == '__main__':
     runs_time = []
     all_gbest_par = []
     best_gBest_acc = 0
+    
+    
 
     for i in range(number_runs):
         print("Run number: " + str(i))
@@ -64,7 +74,7 @@ if __name__ == '__main__':
                      conv_prob=probability_convolution, pool_prob=probability_pooling,
                      fc_prob=probability_fully_connected, max_conv_kernel=max_conv_kernel_size,
                      max_out_ch=max_conv_output_channels, max_fc_neurons=max_fully_connected_neurons,
-                     dropout_rate=dropout, root=args.root)
+                     dropout_rate=dropout, root=args.root, device=device)
 
         pso.fit(Cg=Cg, dropout_rate=dropout)
 
