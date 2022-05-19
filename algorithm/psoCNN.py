@@ -85,8 +85,7 @@ class psoCNN:
                 print("New gBest acc: " + str(self.gBest_acc[0]))
 
                 self.gBest.model_compile(dropout_rate)
-                test_metrics = self.gBest.model.evaluate(
-                    x=self.x_test, y=self.y_test, batch_size=batch_size)
+                test_metrics = self.gBest.model_evaluate(self.test_dl)
                 self.gBest_test_acc[0] = test_metrics[1]
                 print("New gBest test acc: " + str(self.gBest_acc[0]))
 
@@ -134,7 +133,7 @@ class psoCNN:
 
                         self.gBest.model_compile(dropout_rate)
                         _, acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
-                        test_metrics = self.gBest.model.evaluate(self.test_dl)
+                        test_metrics = self.gBest.model_evaluate(self.test_dl)
                         self.gBest.model_delete()
                         gBest_test_acc = test_metrics[1]
 

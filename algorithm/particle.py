@@ -144,9 +144,9 @@ class Particle():
                     # in_w = self.input_width # Not needed ???
                     # in_h = self.input_height # Not needed ???
                     in_c = self.input_channels
-                    list_layers.append(nn.Conv2d(in_c, out_c, kernel_size, stride=1, padding=1))
+                    list_layers.append(nn.Conv2d(in_c, out_c, kernel_size, stride=1, padding=5))
                 else:
-                    list_layers.append(nn.LazyConv2d(out_c, kernel_size, stride=1, padding=1))
+                    list_layers.append(nn.LazyConv2d(out_c, kernel_size, stride=1, padding=5))
                                 
                 list_layers.append(nn.LazyBatchNorm2d())
                 list_layers.append(nn.ReLU())
@@ -185,8 +185,8 @@ class Particle():
         total_loss = 0
         loss = -1
         desc = "validating particle" if opt is None else "training particle"
-        pbar = tqdm(loader, desc=desc) 
-        for (x, y) in pbar:
+        # pbar = tqdm(loader, desc=desc) 
+        for (x, y) in loader:
             # Prediction
             x, y = x.to(self.device), y.to(self.device)
             yp = self.model(x)
@@ -203,7 +203,7 @@ class Particle():
             total_error += (yp.max(dim=1)[1] != y).sum().item()
             total_loss += loss.item() * x.shape[0]
             
-            pbar.set_description(desc + f" loss: {loss:.2f}")
+            # pbar.set_description(desc + f" loss: {loss:.2f}")
             
         return total_loss / len(loader.dataset), total_error / len(loader.dataset) 
     
@@ -225,6 +225,7 @@ class Particle():
     
     def model_evaluate(self, loader):
         self.model.eval()
+        self.model.to(self.device)
         loss, acc = self._epoch(loader)
         return loss, acc 
         
