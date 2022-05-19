@@ -1,17 +1,16 @@
 import numpy as np
 import utils
 from copy import deepcopy
+from tqdm import tqdm
 
-
-
-import torch as t
-import torch.functional as F
+import torch
 import torch.nn as nn
-
 
 class Particle():
     def __init__(self, min_layer: int, max_layer: int, max_pool_layer: int, width_in: int, height_in: int, channels_in: int,
                  conv_prob: float, pool_prob: float, max_conv_kernels: int, max_ch_out: int, max_fc_neurons: int, dim_out: int):
+        self.device = "cpu"
+        
         self.min_layer = min_layer 
         self.max_layer = max_layer
         self.max_pool_layer = max_pool_layer
@@ -79,17 +78,52 @@ class Particle():
         self.layers[-1] = {"type": "fc", "ou_c": self.output_dim, "kernel": -1}
     
     def velocity(self, cg):
-        pass
+        self.vel = utils.computeVelocity(self.gBest, self.pBest.layers, self.layers, cg)
     
     def update(self):
-        pass
+        new_p = utils.updateParticle(self.layers, self.vel)
+        new_p = self.validate(new_p)
+        
+        self.layers = new_p
+        self.model = None
     
-    def validate(self):
-        pass
+    def validate(self, list_layers):
+        # Last layer should always be a fc with number of neurons equal to the number of outputs
+        list_layers[-1] = {"type": "fc", "ou_c": self.output_dim, "kernel": -1}
+
+        # Remove excess of Pooling layers
+        self.num_pool_layers = 0
+        for i in range(len(list_layers)):
+            if list_layers[i]["type"] == "max_pool" or list_layers[i]["type"] == "avg_pool":
+                self.num_pool_layers += 1
+            
+                if self.num_pool_layers >= self.max_pool_layers:
+                    list_layers[i]["type"] = "remove"
+
+
+        # Now, fix the inputs of each conv and pool layers
+        updated_list_layers = []
+        
+        for i in range(0, len(list_layers)):
+            if list_layers[i]["type"] != "remove":
+                if list_layers[i]["type"] == "conv":
+                    updated_list_layers.append({"type": "conv", "ou_c": list_layers[i]["ou_c"], "kernel": list_layers[i]["kernel"]})
+                
+                if list_layers[i]["type"] == "fc":
+                    updated_list_layers.append(list_layers[i])
+
+                if list_layers[i]["type"] == "max_pool":
+                    updated_list_layers.append({"type": "max_pool", "ou_c": -1, "kernel": 2})
+
+                if list_layers[i]["type"] == "avg_pool":
+                    updated_list_layers.append({"type": "avg_pool", "ou_c": -1, "kernel": 2})
+
+        return 
     
     def model_compile(self):
         list_layers = self.layers
         self.model = nn.Sequential()
+        breakpoint()
         
         for i in range(len(list_layers)):
             if list_layers[i]["type"] == "conv":
@@ -104,13 +138,37 @@ class Particle():
             if list_layers[i]["type"] == "fc":
                 pass
         
-    def model_fit(self):
-        pass
+
+    def model_fit(self, loader, epochs):
+        # Train the model for n epochs
+        total_error = 0
+        total_loss = 0
+        for epoch in tqdm(range(epochs), desc="fitting particle"):
+           for (x, y) in loader:
+               # Prediction
+               x, y = x.to(self.device), y.to(self.device)
+               yp = self.mod
+               loss = nn.CrossEntropyLoss()(yp, y)
+               
+               # Backpropagation
+               # opt.zero_g
+               loss.backwward()
+               # torch.nn.utils.clip_grad_norm_(self.model.parameters(),
+               # opt.step()
+               
+               # Update error and loss
+               total_error += (yp.max(dim=1)[1] != y).sum().item()
+               total_loss += loss.item() * x.shape[0]
+               
+        return total_loss / len(loader.dataset), total_error / len(loader.dataset)
     
     def model_fit_complete(self):
         pass
     
     def model_delete(self):
-        pass
+        # This is used to free up memory during PSO training
+        self.model = self.model.to("cpu")
+        del self.model
+        self.model = None
         
         
