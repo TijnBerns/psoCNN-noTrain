@@ -58,3 +58,12 @@ def get_ntk_n(xloader, networks, recalbn=0, train_mode=False, num_batch=-1):
         eigenvalues, _ = torch.symeig(ntk)  # ascending
         conds.append(np.nan_to_num((eigenvalues[-1] / eigenvalues[0]).item(), copy=True, nan=100000.0))
     return conds
+
+
+def get_ntk_score(dataloader, network, iterations=1):
+    ntk_values = []
+    for i in range(iterations):
+        ntk = get_ntk_n(dataloader, [network], num_batch=1)
+        ntk_values.append(ntk[0])
+
+    return np.mean(ntk_values)

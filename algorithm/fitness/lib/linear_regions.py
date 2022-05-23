@@ -6,7 +6,7 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as dset
 from pdb import set_trace as bp
-from datasets import CUTOUT, Dataset2Class, ImageNet16
+#from datasets import CUTOUT, Dataset2Class, ImageNet16
 from operator import mul
 from functools import reduce
 
@@ -33,7 +33,7 @@ class LinearRegionCount(object):
     @torch.no_grad()
     def calc_LR(self):
         res = torch.matmul(self.activations.half(), (1-self.activations).T.half()) # each element in res: A * (1 - B)
-        res += res.T # make symmetric, each element in res: A * (1 - B) + (1 - A) * B, a non-zero element indicate a pair of two different linear regions
+        res += res.clone().T # make symmetric, each element in res: A * (1 - B) + (1 - A) * B, a non-zero element indicate a pair of two different linear regions
         res = 1 - torch.sign(res) # a non-zero element now indicate two linear regions are identical
         res = res.sum(1) # for each sample's linear region: how many identical regions from other samples
         res = 1. / res.float() # contribution of each redudant (repeated) linear region
@@ -62,9 +62,8 @@ class LinearRegionCount(object):
 
 
 class Linear_Region_Collector:
-    def __init__(self, train_loader, models, input_size=(64, 3, 32, 32), sample_batch=100, seed=0):
+    def __init__(self, train_loader, models, input_size=(16, 1, 28, 28), sample_batch=4, seed=0):
         self.train_loader = train_loader
-        self.models = []
         self.input_size = input_size  # BCHW
         self.sample_batch = sample_batch
         self.input_numel = reduce(mul, self.input_size, 1)
@@ -107,12 +106,15 @@ class Linear_Region_Collector:
         for _ in range(self.sample_batch):
             try:
                 inputs, targets = self.loader.next()
+                inputs = inputs.cuda()
             except Exception:
                 del self.loader
                 self.loader = iter(self.train_loader)
                 inputs, targets = self.loader.next()
+                inputs = inputs.cuda()
             for model, LRCount in zip(self.models, self.LRCounts):
                 self.forward(model, LRCount, inputs)
+
         return [LRCount.getLinearReginCount() for LRCount in self.LRCounts]
 
     def forward(self, model, LRCount, input_data):
@@ -124,7 +126,8 @@ class Linear_Region_Collector:
             LRCount.update2D(feature_data)
 
 
-def get_linear_regions(dataloader, model):
-    lrc_model = Linear_Region_Collector(dataloader, [model])
+def get_linear_regions(dataloader, networks):
+    networks[0].train()
+    lrc_model = Linear_Region_Collector(dataloader, networks)
 
     return lrc_model.forward_batch_sample()
