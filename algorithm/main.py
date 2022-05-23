@@ -35,7 +35,7 @@ if __name__ == '__main__':
     batch_size_pso = 32
     batch_size_full_training = 32
     
-    epochs_pso = 1
+    epochs_pso = 5
     epochs_full_training = 20
     
     max_conv_output_channels = 256

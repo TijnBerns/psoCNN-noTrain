@@ -59,26 +59,29 @@ def get_networks(n):
 
 
 def get_dataloader(batch_size=16):
-    root = '../data'
+    root = '../data/data'
     trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (1.0,))])
     train_set = MNIST(root=root, train=True, transform=trans, download=False)
     #train_set.train_data.to(torch.device("cuda"))
     #train_set.train_labels.to(torch.device("cuda"))
     #tensor_set = TensorDataset(train_set)
 
-    dataloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False, pin_memory=True, drop_last=True)
+    dataloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, pin_memory=True, drop_last=True)
     return dataloader
 
 #networks = get_networks(2)
 network = NetMnist()
 network.to(device)
-networks = get_networks(1)
+networks = [network]
+# networks = get_networks(1)
 # network.cuda()
 print(network)
 dataloader = get_dataloader()
 
 #ntk = get_ntk_n(dataloader, networks, num_batch=1)
-ntk = NTK(device).get_ntk_score(dataloader, networks[0], 1)
-print(ntk)
+for _ in range(10):
+    dataloader = get_dataloader()
+    ntk = NTK(device).get_ntk_score(dataloader, networks[0], 20)
+    print(ntk)
 #linear_regions = get_linear_regions(dataloader, networks)
 #print(linear_regions)
