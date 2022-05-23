@@ -16,8 +16,8 @@ if __name__ == "__main__":
     os.system(f"sfn  {args.root}")
     
     # Download CIFAR10 train and test sets
-    # torchvision.datasets.CIFAR10(root = args.root, train = True, download=True) 
-    # torchvision.datasets.CIFAR10(root = args.root, train = False, download=True) 
+    torchvision.datasets.CIFAR10(root = args.root, train = True, download=True) 
+    torchvision.datasets.CIFAR10(root = args.root, train = False, download=True) 
     
     # Download MNIST train and test sets
     torchvision.datasets.MNIST(root = args.root, train = True, download=True) 
