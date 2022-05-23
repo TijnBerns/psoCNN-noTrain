@@ -4,6 +4,8 @@
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=6
 #SBATCH --time=12:00:00
+#SBATCH --output=./logs/%J.out
+#SBATCH --error=./logs/%J.err
 
 #only use this if you want to send the mail to another team member #SBATCH --mail-user=teammember
 #only use this if you want to receive mails on you job status

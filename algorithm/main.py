@@ -26,8 +26,9 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     dataset = "mnist"
-    
-    number_runs = 10
+    # dataset = "cifar10"
+        
+    number_runs = 1
     number_iterations = 10
     population_size = 20
 
@@ -35,7 +36,7 @@ if __name__ == '__main__':
     batch_size_full_training = 32
     
     epochs_pso = 1
-    epochs_full_training = 100
+    epochs_full_training = 20
     
     max_conv_output_channels = 256
     max_fully_connected_neurons = 300
@@ -102,8 +103,8 @@ if __name__ == '__main__':
         runs_time.append(running_time)
 
         # Fully train the gBest model found
-        n_parameters = pso.fit_gBest(batch_size=batch_size_full_training, epochs=epochs_full_training, dropout_rate=dropout)
-        all_gbest_par.append(n_parameters)
+        acc = pso.fit_gBest(batch_size=batch_size_full_training, epochs=epochs_full_training, dropout_rate=dropout)
+        # all_gbest_par.append(n_parameters)
 
         # Evaluate the fully trained gBest model
         gBest_metrics = pso.evaluate_gBest(batch_size=batch_size_full_training)
@@ -111,14 +112,13 @@ if __name__ == '__main__':
         if gBest_metrics[1] >= best_gBest_acc:
             best_gBest_acc = gBest_metrics[1]
 
-            # Save best gBest model
-            best_gBest_yaml = pso.gBest.model.to_yaml()
-
-            with open(results_path + "best-gBest-model.yaml", "w") as yaml_file:
-                yaml_file.write(best_gBest_yaml)
+            # Save best gBest model structure 
+            with open(results_path + "best-gBest-model.txt", "w") as f:
+                f.write(pso.gBest.model.__str__())
             
             # Save best gBest model weights to HDF5 file
-            pso.gBest.model.save_weights(results_path + "best-gBest-weights.h5")
+            torch.save(pso.gBest.model.state_dict(), results_path + "best-gBest-weights.pt" )
+            # pso.gBest.model.save_weights(results_path + "best-gBest-weights.h5")
 
         all_gBest_metrics[i, 0] = gBest_metrics[0]
         all_gBest_metrics[i, 1] = gBest_metrics[1]

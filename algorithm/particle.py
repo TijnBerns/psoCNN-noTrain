@@ -89,8 +89,8 @@ class Particle():
             
         self.layers[-1] = {"type": "fc", "ou_c": self.output_dim, "kernel": -1}
     
-    def velocity(self, cg):
-        self.vel = utils.computeVelocity(self.gBest, self.pBest.layers, self.layers, cg)
+    def velocity(self, gBest, cg):
+        self.vel = utils.computeVelocity(gBest, self.pBest.layers, self.layers, cg)
     
     def update(self):
         new_p = utils.updateParticle(self.layers, self.vel)
@@ -130,7 +130,7 @@ class Particle():
                 if list_layers[i]["type"] == "avg_pool":
                     updated_list_layers.append({"type": "avg_pool", "ou_c": -1, "kernel": 2})
 
-        return 
+        return updated_list_layers
     
     def model_compile(self, dropout_rate):
         list_layers = []
@@ -185,8 +185,8 @@ class Particle():
         total_loss = 0
         loss = -1
         desc = "validating particle" if opt is None else "training particle"
-        # pbar = tqdm(loader, desc=desc) 
-        for (x, y) in loader:
+        pbar = tqdm(loader, desc=desc) 
+        for (x, y) in pbar:
             # Prediction
             x, y = x.to(self.device), y.to(self.device)
             yp = self.model(x)
@@ -203,7 +203,7 @@ class Particle():
             total_error += (yp.max(dim=1)[1] != y).sum().item()
             total_loss += loss.item() * x.shape[0]
             
-            # pbar.set_description(desc + f" loss: {loss:.2f}")
+            pbar.set_description(desc + f" loss: {loss:.2f}")
             
         return total_loss / len(loader.dataset), total_error / len(loader.dataset) 
     
@@ -235,7 +235,7 @@ class Particle():
     
     def model_delete(self):
         # This is used to free up memory during PSO training
-        self.model = self.model.to("cpu")
+        # self.model = self.model.to("cpu")
         del self.model
         self.model = None
         

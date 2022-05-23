@@ -5,11 +5,11 @@ import argparse
 from population import Population
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+from tqdm import tqdm
 
 class psoCNN:
     def __init__(self, dataset, n_iter, pop_size, batch_size, epochs, min_layer, max_layer,
                  conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, dropout_rate, root, device):
-
         self.device = device
 
         self.pop_size = pop_size
@@ -29,6 +29,17 @@ class psoCNN:
             self.train_ds = torchvision.datasets.MNIST(
                 root=root, train=True, download=False, transform=transforms.ToTensor())
             self.test_ds = torchvision.datasets.MNIST(
+                root=root, train=False, download=False, transform=transforms.ToTensor())
+            
+        elif dataset == "cifar10":
+            input_width = 32
+            input_height = 32
+            input_channels = 3
+            output_dim = 10
+
+            self.train_ds = torchvision.datasets.CIFAR10(
+                root=root, train=True, download=False, transform=transforms.ToTensor())
+            self.test_ds = torchvision.datasets.CIFAR10(
                 root=root, train=False, download=False, transform=transforms.ToTensor())
         
         else: 
@@ -143,7 +154,7 @@ class psoCNN:
             print("Current gBest acc: " + str(self.gBest_acc[i]))
             print("Current gBest test acc: " + str(self.gBest_test_acc[i]))
 
-    def fit_gBest(self, epochs, dropout_rate):
+    def fit_gBest(self, batch_size, epochs, dropout_rate):
         print("\nFurther training gBest model...")
         self.gBest.model_compile(dropout_rate)
 
@@ -153,12 +164,12 @@ class psoCNN:
         #         self.gBest.model.trainable_weights[i])
         # print("gBest's number of trainable parameters: " + str(trainable_count))
         
-        self.gBest.model_fit_complete(self.train_dl, epochs=epochs)
+        _, acc = self.gBest.model_fit_complete(self.train_dl, epochs=epochs)
 
         # return trainable_count
-        return
+        return acc
 
-    def evaluate_gBest(self):
+    def evaluate_gBest(self, batch_size):
         print("\nEvaluating gBest model on the test set...")
 
         metrics = self.gBest.model_evaluate(self.test_dl)
