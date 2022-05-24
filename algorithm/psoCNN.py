@@ -45,16 +45,8 @@ class psoCNN:
         else: 
             raise NotImplementedError
         
-        self.train_dl = DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True) # <<<<<
-        self.test_dl = DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False)  # <<<<<
-
-        # self.x_train = self.x_train.reshape(
-        #     self.x_train.shape[0], self.x_train.shape[1], self.x_train.shape[2], input_channels)
-        # self.x_test = self.x_test.reshape(
-        #     self.x_test.shape[0], self.x_test.shape[1], self.x_test.shape[2], input_channels)
-
-        # self.y_train = keras.utils.to_categorical(self.y_train, output_dim)
-        # self.y_test = keras.utils.to_categorical(self.y_test, output_dim)
+        self.train_dl = DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True) 
+        self.test_dl = DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False)  
 
         print("Initializing population...")
         self.population = Population(pop_size, min_layer, max_layer, input_width, input_height, input_channels,
@@ -63,19 +55,19 @@ class psoCNN:
         print("Verifying accuracy of the current gBest...")
         print(self.population.particle[0])
         self.gBest = deepcopy(self.population.particle[0])
-        self.gBest.model_compile(dropout_rate)                          # <<<<<
-        acc = self.gBest.model_fit(self.train_dl, epochs=epochs)        # <<<<<
-        test_metrics = self.gBest.model_evaluate(self.test_dl)          # <<<<<
+        self.gBest.model_compile(dropout_rate)                         
+        score = self.gBest.compute_inv_ntk(self.train_dl)       
+        # test_metrics = self.gBest.model_evaluate(self.test_dl)          
         self.gBest.model_delete()
 
-        self.gBest_acc[0] = acc                                         # <<<<<
-        self.gBest_test_acc[0] = test_metrics[1]                        # <<<<<
+        self.gBest_acc[0] = score                                         
+        # self.gBest_test_acc[0] = test_metrics[1]                        
 
-        self.population.particle[0].acc = acc                           # <<<<<
-        self.population.particle[0].pBest.acc = acc                     # <<<<<
+        self.population.particle[0].acc = score                           
+        self.population.particle[0].pBest.acc = score                     
 
         print("Current gBest acc: " + str(self.gBest_acc[0]) + "\n")
-        print("Current gBest test acc: " + str(self.gBest_test_acc[0]) + "\n")
+        # print("Current gBest test acc: " + str(self.gBest_test_acc[0]) + "\n")
 
         print("Looking for a new gBest in the population...")
         for i in range(1, self.pop_size):
@@ -83,29 +75,29 @@ class psoCNN:
             print(self.population.particle[i])
 
             self.population.particle[i].model_compile(dropout_rate)
-            acc = self.population.particle[i].model_fit(self.train_dl, epochs=epochs) # <<<<<
-            self.population.particle[i].model_delete()
+            score = self.population.particle[i].compute_inv_ntk(self.train_dl)   
+            # self.population.particle[i].model_delete()
 
-            self.population.particle[i].acc = acc
-            self.population.particle[i].pBest.acc = acc
+            self.population.particle[i].acc = score
+            self.population.particle[i].pBest.acc = score
 
             if self.population.particle[i].pBest.acc >= self.gBest_acc[0]:
                 print("Found a new gBest.")
                 self.gBest = deepcopy(self.population.particle[i])
                 self.gBest_acc[0] = self.population.particle[i].pBest.acc
-                print("New gBest acc: " + str(self.gBest_acc[0]))
+                print("New gBest score: " + str(self.gBest_acc[0]))
 
                 self.gBest.model_compile(dropout_rate)
-                test_metrics = self.gBest.model_evaluate(self.test_dl)
-                self.gBest_test_acc[0] = test_metrics[1]
-                print("New gBest test acc: " + str(self.gBest_acc[0]))
+                score = self.gBest.compute_inv_ntk(self.train_dl)   
+                self.gBest_test_acc[0] = score
+                print("New gBest test score: " + str(self.gBest_acc[0]))
 
             self.gBest.model_delete()
 
     def fit(self, Cg, dropout_rate):
         for i in range(1, self.n_iter):
             gBest_acc = self.gBest_acc[i-1]
-            gBest_test_acc = self.gBest_test_acc[i-1]
+            # gBest_test_acc = self.gBest_test_acc[i-1]
 
             for j in range(self.pop_size):
                 print('Iteration: ' + str(i) + ' - Particle: ' + str(j+1))
@@ -121,7 +113,7 @@ class psoCNN:
 
                 # Compute the acc in the updated particle
                 self.population.particle[j].model_compile(dropout_rate)
-                acc = self.population.particle[j].model_fit(self.train_dl, self.epochs)
+                acc = self.population.particle[j].compute_inv_ntk(self.train_dl) 
                 self.population.particle[j].model_delete()
 
                 self.population.particle[j].acc = acc
@@ -143,16 +135,16 @@ class psoCNN:
                         self.gBest = deepcopy(self.population.particle[j])
 
                         self.gBest.model_compile(dropout_rate)
-                        acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
-                        test_metrics = self.gBest.model_evaluate(self.test_dl)
+                        acc = self.gBest.compute_inv_ntk(self.train_dl) 
+                        # test_metrics = self.gBest.model_evaluate(self.test_dl)
                         self.gBest.model_delete()
-                        gBest_test_acc = test_metrics[1]
+                        # gBest_test_acc = test_metrics[1]
 
             self.gBest_acc[i] = gBest_acc
-            self.gBest_test_acc[i] = gBest_test_acc
+            # self.gBest_test_acc[i] = gBest_test_acc
 
-            print("Current gBest acc: " + str(self.gBest_acc[i]))
-            print("Current gBest test acc: " + str(self.gBest_test_acc[i]))
+            print("Current gBest score: " + str(self.gBest_acc[i]))
+            # print("Current gBest test acc: " + str(self.gBest_test_acc[i]))
 
     def fit_gBest(self, batch_size, epochs, dropout_rate):
         print("\nFurther training gBest model...")

@@ -210,7 +210,7 @@ class Particle():
             
         return total_loss / len(loader.dataset), total_acc / len(loader.dataset) 
     
-    def model_fit_train(self, loader, epochs):
+    def model_train(self, loader, epochs):
         loss = 0
         acc = 0
         self.model.train()
@@ -226,24 +226,11 @@ class Particle():
         
         return loss, acc
     
-    def model_fit_ntk(self):
-        pass
+    def compute_inv_ntk(self, loader, iterations=1):
+        ntk = NTK(self.device).get_ntk_score(loader, self.model, iterations)
+        return 1 / ntk
     
-    def model_fit(self, loader, epochs):
-        if self.p_type == "train":
-            _, score = self.model_fit_train(loader, epochs)
-        elif self.p_type == "ntk":
-            ntk = NTK(self.device).get_ntk_score(loader, self.model, 1)
-            score = 1 / ntk
-        else:
-            raise NotImplementedError
-        return score 
-        
-    
-    def model_evaluate(self, loader):
-        if self.p_type == "ntk":
-            self.model_fit_train(loader, 1)
-            
+    def model_evaluate(self, loader):           
         self.model.eval()
         self.model.to(self.device)
         loss, acc = self._epoch(loader)
