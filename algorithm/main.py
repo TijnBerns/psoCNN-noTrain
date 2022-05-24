@@ -12,7 +12,7 @@ import torch
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--root", help="root path at which data is stored", type=str, default="../data/data")
+        "--root", help="root path at which data is stored", type=str, default="../data")
     parser.add_argument(
         "--gpu", help="whether to use gpu or not", type=int, default=0)
     args = parser.parse_args()
@@ -25,19 +25,19 @@ if __name__ == '__main__':
     else:
         device = torch.device("cpu")
 
-    dataset = "mnist"
-    # dataset = "cifar10"
+    # dataset = "mnist"
+    dataset = "cifar10"
         
-    number_runs = 1
+    number_runs = 10
     number_iterations = 10
     population_size = 20
 
     batch_size_pso = 32
     batch_size_full_training = 32
-    
-    epochs_pso = 5
-    epochs_full_training = 20
-    
+
+    epochs_pso = 1
+    epochs_full_training = 100
+
     max_conv_output_channels = 256
     max_fully_connected_neurons = 300
 

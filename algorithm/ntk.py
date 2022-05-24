@@ -67,15 +67,15 @@ class NTK():
         ntks = [torch.einsum('nc,mc->nm', [_grads, _grads]) for _grads in grads]
         conds = []
         for ntk in ntks:
-            eigenvalues, _ = torch.symeig(ntk)  # ascending
+            eigenvalues, _ = torch.linalg.eigh(ntk)  # ascending
             conds.append(np.nan_to_num((eigenvalues[-1] / eigenvalues[0]).item(), copy=True, nan=100000.0))
         return conds
 
 
-    def get_ntk_score(self, dataloader, network, iterations=1):
+    def get_ntk_score(self, dataloader, network, iterations=1, num_batch=20):
         ntk_values = []
         for _ in range(iterations):
-            ntk = self.get_ntk_n(dataloader, [network], num_batch=5)
+            ntk = self.get_ntk_n(dataloader, [network], num_batch=num_batch)
             ntk_values.append(ntk[0])
 
         return np.mean(ntk_values)

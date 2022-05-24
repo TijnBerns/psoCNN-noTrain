@@ -8,7 +8,7 @@ sys.path.append('../algorithm')
 import torch
 from torch import nn
 from torch.utils.data import TensorDataset
-from torchvision.datasets import MNIST
+import torchvision.datasets as datasets
 from torchvision.transforms import transforms
 import torch.nn.functional as F
 
@@ -36,6 +36,15 @@ class NetMnist(nn.Module):
         x = x.view(x.shape[0], -1)
         x = F.relu(self.fc1(x))
         return self.fc2(x)
+    
+class VerySimple(nn.Module):
+    def __init__(self) -> None:
+        super(VerySimple, self).__init__()
+        self.fc1 = nn.Linear(32*32*3, 10)
+    
+    def forward(self, x):
+        x = x.view(x.shape[0], -1)
+        return self.fc1(x)
 
 
 def get_networks(n):
@@ -58,10 +67,10 @@ def get_networks(n):
     return nets
 
 
-def get_dataloader(batch_size=16):
-    root = '../data/data'
-    trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (1.0,))])
-    train_set = MNIST(root=root, train=True, transform=trans, download=False)
+def get_dataloader(batch_size=32):
+    root = '../data'
+    trans = transforms.Compose([transforms.ToTensor()])
+    train_set = datasets.CIFAR100(root=root, train=True, transform=trans, download=False)
     #train_set.train_data.to(torch.device("cuda"))
     #train_set.train_labels.to(torch.device("cuda"))
     #tensor_set = TensorDataset(train_set)
@@ -70,7 +79,7 @@ def get_dataloader(batch_size=16):
     return dataloader
 
 #networks = get_networks(2)
-network = NetMnist()
+network = VerySimple()
 network.to(device)
 networks = [network]
 # networks = get_networks(1)
@@ -81,7 +90,7 @@ dataloader = get_dataloader()
 #ntk = get_ntk_n(dataloader, networks, num_batch=1)
 for _ in range(10):
     dataloader = get_dataloader()
-    ntk = NTK(device).get_ntk_score(dataloader, networks[0], 20)
+    ntk = NTK(device).get_ntk_score(dataloader, networks[0], 10)
     print(ntk)
 #linear_regions = get_linear_regions(dataloader, networks)
 #print(linear_regions)

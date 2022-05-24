@@ -64,7 +64,7 @@ class psoCNN:
         print(self.population.particle[0])
         self.gBest = deepcopy(self.population.particle[0])
         self.gBest.model_compile(dropout_rate)                          # <<<<<
-        loss, acc = self.gBest.model_fit(self.train_dl, epochs=epochs)  # <<<<<
+        acc = self.gBest.model_fit(self.train_dl, epochs=epochs)        # <<<<<
         test_metrics = self.gBest.model_evaluate(self.test_dl)          # <<<<<
         self.gBest.model_delete()
 
@@ -83,7 +83,7 @@ class psoCNN:
             print(self.population.particle[i])
 
             self.population.particle[i].model_compile(dropout_rate)
-            _, acc = self.population.particle[i].model_fit(self.train_dl, epochs=epochs) # <<<<<
+            acc = self.population.particle[i].model_fit(self.train_dl, epochs=epochs) # <<<<<
             self.population.particle[i].model_delete()
 
             self.population.particle[i].acc = acc
@@ -121,7 +121,7 @@ class psoCNN:
 
                 # Compute the acc in the updated particle
                 self.population.particle[j].model_compile(dropout_rate)
-                loss, acc = self.population.particle[j].model_fit(self.train_dl, self.epochs)
+                acc = self.population.particle[j].model_fit(self.train_dl, self.epochs)
                 self.population.particle[j].model_delete()
 
                 self.population.particle[j].acc = acc
@@ -143,7 +143,7 @@ class psoCNN:
                         self.gBest = deepcopy(self.population.particle[j])
 
                         self.gBest.model_compile(dropout_rate)
-                        _, acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
+                        acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
                         test_metrics = self.gBest.model_evaluate(self.test_dl)
                         self.gBest.model_delete()
                         gBest_test_acc = test_metrics[1]

@@ -1,3 +1,4 @@
+from re import A
 import numpy as np
 import utils
 from copy import deepcopy
@@ -6,6 +7,8 @@ import torch.optim as optim
 
 import torch
 import torch.nn as nn
+
+from ntk import NTK
 
 class Particle():
     def __init__(self, min_layer, max_layer, max_pool_layers, input_width, input_height, input_channels, \
@@ -32,7 +35,7 @@ class Particle():
         
         self.output_dim = output_dim
         
-        
+        self.p_type = "ntk"
         
         self.layers = []
         self.acc = None
@@ -181,7 +184,7 @@ class Particle():
         self.model = nn.Sequential(*list_layers)
     
     def _epoch(self, loader, opt=None):
-        total_error = 0
+        total_acc = 0
         total_loss = 0
         loss = -1
         desc = "validating particle" if opt is None else "training particle"
@@ -200,30 +203,47 @@ class Particle():
                 opt.step()
             
             # Update error and loss
-            total_error += (yp.max(dim=1)[1] != y).sum().item()
+            total_acc += (yp.max(dim=1)[1] == y).sum().item()
             total_loss += loss.item() * x.shape[0]
             
             pbar.set_description(desc + f" loss: {loss:.2f}")
             
-        return total_loss / len(loader.dataset), total_error / len(loader.dataset) 
+        return total_loss / len(loader.dataset), total_acc / len(loader.dataset) 
     
-    def model_fit(self, loader, epochs):
+    def model_fit_train(self, loader, epochs):
         loss = 0
-        error = 0
+        acc = 0
         self.model.train()
         self.model = self.model.to(self.device)
         
         adam_opt = optim.Adam(self.model.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=0.0)
 
         for _ in range(epochs):
-            loss, error = self._epoch(loader=loader, opt=adam_opt)
+            loss, acc = self._epoch(loader=loader, opt=adam_opt)
            
         if self.device != "cpu":
             self.model = self.model.to("cpu")
         
-        return loss, 1 - error 
+        return loss, acc
+    
+    def model_fit_ntk(self):
+        pass
+    
+    def model_fit(self, loader, epochs):
+        if self.p_type == "train":
+            _, score = self.model_fit_train(loader, epochs)
+        elif self.p_type == "ntk":
+            ntk = NTK(self.device).get_ntk_score(loader, self.model, 1)
+            score = 1 / ntk
+        else:
+            raise NotImplementedError
+        return score 
+        
     
     def model_evaluate(self, loader):
+        if self.p_type == "ntk":
+            self.model_fit_train(loader, 1)
+            
         self.model.eval()
         self.model.to(self.device)
         loss, acc = self._epoch(loader)
