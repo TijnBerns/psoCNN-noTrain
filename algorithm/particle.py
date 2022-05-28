@@ -1,3 +1,4 @@
+from cmath import inf
 from re import A
 import numpy as np
 import utils
@@ -9,6 +10,7 @@ import torch
 import torch.nn as nn
 
 from ntk import NTK
+import mellor
 
 
 class Particle():
@@ -35,10 +37,11 @@ class Particle():
 
         self.output_dim = config.output_dim
 
-        self.p_type = "train"
+        self.particle_type = config.particle_type
 
         self.layers = []
         self.acc = None
+        self.score = None
         self.vel = []
         self.pBest = []
 
@@ -213,6 +216,13 @@ class Particle():
             pbar.set_description(desc + f" loss: {loss:.2f}")
 
         return total_loss / len(loader.dataset), total_acc / len(loader.dataset)
+    
+    def measure(self):
+        if self.particle_type == "train":
+            return self.acc
+        else:
+            return self.score
+    
 
     def model_fit_train(self, loader, epochs):
         loss = 0
@@ -235,23 +245,27 @@ class Particle():
         self.model
         return loss, acc
 
-    def model_fit_ntk(self):
-        pass
-
-    def model_fit(self, loader, epochs):
-        if self.p_type == "train":
-            _, score = self.model_fit_train(loader, epochs)
-        elif self.p_type == "ntk":
-            ntk = NTK(self.device).get_ntk_score(loader, self.model, 1)
-            score = 1 / ntk
-        else:
-            raise NotImplementedError
+    def model_ntk(self, loader):
+        ntk = NTK(self.device).get_ntk_score(loader, self.model, 1)
+        score = 1 / ntk
+        return score
+    
+    def model_mellor(self, loader):
+        score = mellor.score_network(self.model, loader)
         return score
 
-    def model_evaluate(self, loader):
-        if self.p_type == "ntk":
-            self.model_fit_train(loader, 1)
+    def model_fit(self, loader, epochs):
+        if self.particle_type == "ntk":
+            score = self.model_ntk(loader) 
+        elif self.particle_type == "mellor":
+            score = self.model_mellor(loader) 
+        else:
+            score = -inf
+        _, acc = self.model_fit_train(loader, epochs)
+        
+        return acc, score 
 
+    def model_evaluate(self, loader):
         self.model.eval()
         self.model.to(self.device)
         loss, acc = self._epoch(loader)

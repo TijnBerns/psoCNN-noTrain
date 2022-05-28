@@ -11,12 +11,14 @@ from torch.utils.data import TensorDataset
 import torchvision.datasets as datasets
 from torchvision.transforms import transforms
 import torch.nn.functional as F
-
+from mellor import score_network
 from linear_regions import get_linear_regions
 from ntk import NTK 
 from particle import Particle
 
-device = "cpu"
+from config import Config
+
+config = Config()
 
 class NetMnist(nn.Module):
     def __init__(self):
@@ -40,37 +42,43 @@ class NetMnist(nn.Module):
 class VerySimple(nn.Module):
     def __init__(self) -> None:
         super(VerySimple, self).__init__()
-        self.fc1 = nn.Linear(32*32*3, 10)
+        self.fc1 = nn.Linear(32*32*3, 100)
+        self.rel1 = nn.ReLU()
+        self.fc2 = nn.Linear(100, 10)
+        self.rel2 = nn.ReLU()
     
     def forward(self, x):
         x = x.view(x.shape[0], -1)
-        return self.fc1(x)
+        x = self.fc1(x)
+        x = self.rel1(x)
+        x = self.fc2(x)
+        x = self.rel2(x)
+        return x
 
 
-def get_networks(n):
-    nets = []
+# def get_networks(n):
+#     nets = []
 
-    m_pool = 0
-    in_w = 28
-    while in_w > 4:
-        m_pool += 1
-        in_w = in_w / 2
+#     m_pool = 0
+#     in_w = 28
+#     while in_w > 4:
+#         m_pool += 1
+#         in_w = in_w / 2
 
-    for i in range(n):
-        particle = Particle(min_layer=3, max_layer=20, max_pool_layers=m_pool, input_width=28, input_height=28,
-                            input_channels=1, conv_prob=0.6, pool_prob=0.3, fc_prob=0.1, max_conv_kernel=7,
-                            max_out_ch=256, max_fc_neurons=300, output_dim=10, device=device)
-        particle.model_compile(dropout_rate=0.5)
-        model = particle.model
-        nets.append(model)
+#     for i in range(n):
+#         particle = Particle(min_layer=3, max_layer=20, max_pool_layers=m_pool, input_width=28, input_height=28,
+#                             input_channels=1, conv_prob=0.6, pool_prob=0.3, fc_prob=0.1, max_conv_kernel=7,
+#                             max_out_ch=256, max_fc_neurons=300, output_dim=10, device=device)
+#         particle.model_compile(dropout_rate=0.5)
+#         model = particle.model
+#         nets.append(model)
 
-    return nets
+#     return nets
 
 
 def get_dataloader(batch_size=32):
-    root = '../data'
     trans = transforms.Compose([transforms.ToTensor()])
-    train_set = datasets.CIFAR100(root=root, train=True, transform=trans, download=False)
+    train_set = datasets.CIFAR10(root=config.data_path, train=True, transform=trans, download=False)
     #train_set.train_data.to(torch.device("cuda"))
     #train_set.train_labels.to(torch.device("cuda"))
     #tensor_set = TensorDataset(train_set)
@@ -80,17 +88,19 @@ def get_dataloader(batch_size=32):
 
 #networks = get_networks(2)
 network = VerySimple()
-network.to(device)
-networks = [network]
+network.to(config.device)
+# networks = [network]
 # networks = get_networks(1)
 # network.cuda()
 print(network)
 dataloader = get_dataloader()
 
-#ntk = get_ntk_n(dataloader, networks, num_batch=1)
-for _ in range(10):
-    dataloader = get_dataloader()
-    ntk = NTK(device).get_ntk_score(dataloader, networks[0], 10)
-    print(ntk)
-#linear_regions = get_linear_regions(dataloader, networks)
-#print(linear_regions)
+score = score_network(network, dataloader)
+breakpoint()
+# #ntk = get_ntk_n(dataloader, networks, num_batch=1)
+# for _ in range(10):
+#     dataloader = get_dataloader()
+#     ntk = NTK(device).get_ntk_score(dataloader, networks[0], 10)
+#     print(ntk)
+# #linear_regions = get_linear_regions(dataloader, networks)
+# #print(linear_regions)

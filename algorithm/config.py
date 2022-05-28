@@ -4,14 +4,20 @@ from torchvision import transforms
 
 class Config():
     def __init__(self) -> None:
-        self.version = 0
-        # self.dataset: str = "mnist"
+        self.version = 2
         self.dataset: str = "cifar10"
+        # self.dataset: str = "mnist"
+        self.seed = 0
         self.results_path: str = f"../results/{self.dataset}_{self.version}/"
         self.device = torch.device(
             "cuda") if torch.cuda.is_available() else torch.device("cpu")
+        # self.device = torch.device("cpu")
 
         ######## Algorithm parameters ##################
+        # self.type = "train"
+        self.particle_type = "mellor"
+        # self.type = "ntk"
+        
         self.number_runs: int = 1
         self.number_iterations: int = 20
         self.population_size: int = 10

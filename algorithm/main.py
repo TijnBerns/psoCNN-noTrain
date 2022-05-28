@@ -22,7 +22,7 @@ def run_algorithm():
     all_gBest_metrics = np.zeros((config.number_runs, 2))
     
     runs_time = []
-    best_gBest_acc = 0
+    best_gBest_acc = -1
     best_hist_test = []
     best_hist_train = []
 
@@ -51,6 +51,7 @@ def run_algorithm():
             best_gBest_acc = gBest_metrics[1]
             best_hist_train = pso.gBest_acc
             best_hist_test = pso.gBest_test_acc
+            best_hist_measure = pso.gBest_measure
 
             # Save best gBest model structure 
             with open(config.results_path + "best-gBest-model.txt", "w") as f:
@@ -65,7 +66,7 @@ def run_algorithm():
 
         # print("This run took: " + str(running_time) + " seconds.")
 
-         # Compute mean accuracy of all runs
+        # Compute mean accuracy of all runs
         all_gBest_mean_metrics = np.mean(all_gBest_metrics, axis=0)
 
         results = {
@@ -75,26 +76,12 @@ def run_algorithm():
             "all_gBest_mean_acc": all_gBest_mean_metrics[1],
             "best_hist_test": list(best_hist_test),
             "best_hist_train": list(best_hist_train),
+            "best_hist_measure": list(best_hist_measure),
         }
         
         with open(config.results_path + "results.json", "w") as outfile:
             # json.dump(results, outfile, indent = 4, default=lambda o: '<not serializable>')
             json.dump(results, outfile, indent = 4)
-
-        
-        # # Save results in a text file
-        # output_str = "All gBest test accuracies: " + str(all_gBest_metrics[:,1]) + "\n"
-        # output_str = output_str + "All running times: " + str(runs_time) + "\n"
-        # output_str = output_str + "Mean loss of all runs: " + str(all_gBest_mean_metrics) + "\n"
-        # output_str = output_str + "Mean accuracy of all runs: " + str(all_gBest_mean_metrics[1]) + "\n"
-
-        # print(output_str)
-
-        # with open(config.results_path + "/final_results.txt", "w") as f:
-        #     try:
-        #         print(output_str, file=f)
-        #     except SyntaxError:
-        #         print >> f, output_str
     
 if __name__ == '__main__':
     run_algorithm()

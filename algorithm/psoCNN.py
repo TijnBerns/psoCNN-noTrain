@@ -6,8 +6,6 @@ from torch.utils.data import DataLoader
 
 class psoCNN:
     def __init__(self, config):
-                #  dataset, n_iter, pop_size, batch_size, epochs, min_layer, max_layer,
-                #  conv_prob, pool_prob, fc_prob, max_conv_kernel, max_out_ch, max_fc_neurons, dropout_rate, root, device):
         self.device = config.device
 
         self.pop_size = config.population_size
@@ -16,6 +14,7 @@ class psoCNN:
 
         self.batch_size = config.batch_size_pso
         self.gBest_acc = np.zeros(self.n_iter)
+        self.gBest_measure = np.zeros(self.n_iter)
         self.gBest_test_acc = np.zeros(self.n_iter)
         
         self._init_dataset(config)
@@ -29,17 +28,20 @@ class psoCNN:
         print(self.population.particle[0])
         self.gBest = deepcopy(self.population.particle[0])
         self.gBest.model_compile(config.dropout)                          
-        acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)       
+        acc, score = self.gBest.model_fit(self.train_dl, epochs=self.epochs)       
         test_metrics = self.gBest.model_evaluate(self.test_dl)        
         self.gBest.model_delete()
 
-        self.gBest_acc[0] = acc                                         
+        self.population.particle[0].acc = acc   
+        self.population.particle[0].score = score                        
+        self.population.particle[0].pBest.acc = acc    
+        
+        self.gBest_acc[0] = acc      
+        self.gBest_measure[0] = self.population.particle[0].measure()                                       
         self.gBest_test_acc[0] = test_metrics[1]                        
-
-        self.population.particle[0].acc = acc                           
-        self.population.particle[0].pBest.acc = acc                     
-
-        print("Current gBest acc: " + str(self.gBest_acc[0]) + "\n")
+        
+        print("Current gBest acc: " + str(self.gBest_acc[0]))
+        print("Current gBest measure: " + str(self.gBest_measure[0]))
         print("Current gBest test acc: " + str(self.gBest_test_acc[0]) + "\n")
 
         print("Looking for a new gBest in the population...")
@@ -48,17 +50,20 @@ class psoCNN:
             print(self.population.particle[i])
 
             self.population.particle[i].model_compile(config.dropout)
-            acc = self.population.particle[i].model_fit(self.train_dl, epochs=self.epochs) # <<<<<
+            acc, score = self.population.particle[i].model_fit(self.train_dl, epochs=self.epochs) # <<<<<
             self.population.particle[i].model_delete()
 
             self.population.particle[i].acc = acc
+            self.population.particle[i].pBest.score = score
             self.population.particle[i].pBest.acc = acc
 
-            if self.population.particle[i].pBest.acc >= self.gBest_acc[0]:
+            if self.population.particle[i].pBest.measure() >= self.gBest_measure[0]:
                 print("Found a new gBest.")
                 self.gBest = deepcopy(self.population.particle[i])
                 self.gBest_acc[0] = self.population.particle[i].pBest.acc
+                self.gBest_measure[0] = self.population.particle[i].pBest.measure()
                 print("New gBest acc: " + str(self.gBest_acc[0]))
+                print("New gBest measure: " + str(self.gBest_measure[0]))
 
                 self.gBest.model_compile(config.dropout)
                 test_metrics = self.gBest.model_evaluate(self.test_dl)
@@ -86,6 +91,7 @@ class psoCNN:
     def fit(self, Cg, dropout_rate):
         for i in range(1, self.n_iter):
             gBest_acc = self.gBest_acc[i-1]
+            gBest_measure = self.gBest_measure[i-1]
             gBest_test_acc = self.gBest_test_acc[i-1]
 
             for j in range(self.pop_size):
@@ -102,29 +108,35 @@ class psoCNN:
 
                 # Compute the acc in the updated particle
                 self.population.particle[j].model_compile(dropout_rate)
-                acc = self.population.particle[j].model_fit(self.train_dl, self.epochs)
+                acc, score = self.population.particle[j].model_fit(self.train_dl, self.epochs)
                 self.population.particle[j].model_delete()
 
                 self.population.particle[j].acc = acc
+                self.population.particle[j].score = score
 
-                f_test = self.population.particle[j].acc
+                # f_test = self.population.particle[j].acc
+                # pBest_acc = self.population.particle[j].pBest.acc
+                
+                f_test = self.population.particle[j].measure()
                 pBest_acc = self.population.particle[j].pBest.acc
+                pBest_measure = self.population.particle[j].pBest.measure()
 
-                if f_test >= pBest_acc:
+                if f_test >= pBest_measure:
                     print("Found a new pBest.")
                     print("Current acc: " + str(f_test))
                     print("Past pBest acc: " + str(pBest_acc))
-                    pBest_acc = f_test
+                    pBest_acc = acc
                     self.population.particle[j].pBest = deepcopy(
                         self.population.particle[j])
 
-                    if pBest_acc >= gBest_acc:
+                    if pBest_measure >= gBest_measure:
                         print("Found a new gBest.")
                         gBest_acc = pBest_acc
+                        gBest_measure = pBest_measure
                         self.gBest = deepcopy(self.population.particle[j])
 
                         self.gBest.model_compile(dropout_rate)
-                        acc = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
+                        acc, score = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
                         test_metrics = self.gBest.model_evaluate(self.test_dl)
                         self.gBest.model_delete()
                         gBest_test_acc = test_metrics[1]
@@ -134,6 +146,8 @@ class psoCNN:
 
             print("Current gBest acc: " + str(self.gBest_acc[i]))
             print("Current gBest test acc: " + str(self.gBest_test_acc[i]))
+            print("Current gBest measure: " + str(self.gBest_measure[i]))
+
 
     def fit_gBest(self, epochs, dropout_rate):
         print("\nFurther training gBest model...")
@@ -145,7 +159,7 @@ class psoCNN:
         #         self.gBest.model.trainable_weights[i])
         # print("gBest's number of trainable parameters: " + str(trainable_count))
         
-        acc = self.gBest.model_fit_complete(self.train_dl, epochs=epochs)
+        acc, _ = self.gBest.model_fit_complete(self.train_dl, epochs=epochs)
 
         # return trainable_count
         return acc
