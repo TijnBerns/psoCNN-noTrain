@@ -2,8 +2,8 @@
 #SBATCH --partition=csedu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=16G
-#SBATCH --cpus-per-task=6
-#SBATCH --time=12:00:00
+#SBATCH --cpus-per-task=2
+#SBATCH --time=24:00:00
 #SBATCH --output=./logs/%J.out
 #SBATCH --error=./logs/%J.err
 
@@ -16,5 +16,4 @@ project_dir=.
 # execute train CLI
 source "$project_dir"/venv/bin/activate
 python ./algorithm/main.py \
-    --root "$project_dir"/data/data \
     --gpu 1 
