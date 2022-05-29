@@ -34,7 +34,8 @@ class psoCNN:
 
         self.population.particle[0].acc = acc   
         self.population.particle[0].score = score                        
-        self.population.particle[0].pBest.acc = acc    
+        self.population.particle[0].pBest.acc = acc
+        self.population.particle[0].pBest.score = score        
         
         self.gBest_acc[0] = acc      
         self.gBest_measure[0] = self.population.particle[0].measure()                                       
@@ -50,10 +51,11 @@ class psoCNN:
             print(self.population.particle[i])
 
             self.population.particle[i].model_compile(config.dropout)
-            acc, score = self.population.particle[i].model_fit(self.train_dl, epochs=self.epochs) # <<<<<
+            acc, score = self.population.particle[i].model_fit(self.train_dl, epochs=self.epochs)
             self.population.particle[i].model_delete()
 
             self.population.particle[i].acc = acc
+            self.population.particle[i].score = score
             self.population.particle[i].pBest.score = score
             self.population.particle[i].pBest.acc = acc
 
@@ -142,6 +144,7 @@ class psoCNN:
                         gBest_test_acc = test_metrics[1]
 
             self.gBest_acc[i] = gBest_acc
+            self.gBest_measure[i] = gBest_measure
             self.gBest_test_acc[i] = gBest_test_acc
 
             print("Current gBest acc: " + str(self.gBest_acc[i]))

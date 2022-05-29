@@ -4,7 +4,7 @@ from torchvision import transforms
 
 class Config():
     def __init__(self) -> None:
-        self.version = 2
+        self.version = 3
         self.dataset: str = "cifar10"
         # self.dataset: str = "mnist"
         self.seed = 0
@@ -19,8 +19,8 @@ class Config():
         # self.type = "ntk"
         
         self.number_runs: int = 1
-        self.number_iterations: int = 20
-        self.population_size: int = 10
+        self.number_iterations: int = 10
+        self.population_size: int = 1200
 
         self.batch_size_pso: int = 32
         self.batch_size_full_training: int = 32
