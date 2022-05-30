@@ -38,6 +38,7 @@ class Particle():
         self.output_dim = config.output_dim
 
         self.particle_type = config.particle_type
+        self.train = config.train
 
         self.layers = []
         self.acc = None
@@ -193,6 +194,7 @@ class Particle():
     def _epoch(self, loader, opt=None):
         total_acc = 0
         total_loss = 0
+        ce = nn.CrossEntropyLoss()
         loss = -1
         desc = "validating particle" if opt is None else "training particle"
         pbar = tqdm(loader, desc=desc)
@@ -200,7 +202,7 @@ class Particle():
             # Prediction
             x, y = x.to(self.device), y.to(self.device)
             yp = self.model(x)
-            loss = nn.CrossEntropyLoss()(yp, y)
+            loss = ce(yp, y)
 
             # Backpropagate loss
             if opt is not None:
@@ -213,18 +215,19 @@ class Particle():
             total_acc += (yp.max(dim=1)[1] == y).sum().item()
             total_loss += loss.item() * x.shape[0]
 
-            pbar.set_description(desc + f" loss: {loss:.2f}")
+            # pbar.set_description(desc + f" loss: {loss:.2f}")
 
         return total_loss / len(loader.dataset), total_acc / len(loader.dataset)
     
     def measure(self):
-        if self.particle_type == "train":
+        if self.particle_type == "regular":
             return self.acc
         else:
             return self.score
     
 
     def model_fit_train(self, loader, epochs):
+               
         loss = 0
         best_loss = 1e12
         acc = 0
@@ -235,7 +238,7 @@ class Particle():
         adam_opt = optim.Adam(self.model.parameters(),
                               lr=0.001, betas=(0.9, 0.999), weight_decay=0.0)
 
-        for _ in range(epochs):
+        for _ in tqdm(range(epochs), desc=f"Training model for {epochs} epochs"):
             loss, acc = self._epoch(loader=loader, opt=adam_opt)
             if loss < best_loss:
                 best_params = self.model.state_dict()
@@ -261,7 +264,14 @@ class Particle():
             score = self.model_mellor(loader) 
         else:
             score = -inf
-        _, acc = self.model_fit_train(loader, epochs)
+            
+        self.model_delete()
+        self.model_compile(0.5)
+        
+        if self.train:
+            _, acc = self.model_fit_train(loader, epochs)
+        else:
+            acc = 0
         
         return acc, score 
 

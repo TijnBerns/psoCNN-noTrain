@@ -18,8 +18,10 @@ class psoCNN:
         self.gBest_test_acc = np.zeros(self.n_iter)
         
         self._init_dataset(config)
-        self.train_dl = DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True) 
-        self.test_dl = DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False) 
+        self.train_dl = DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=4) 
+        self.test_dl = DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False, num_workers=4) 
+        
+        self.train = config.train
 
         print("Initializing population...")
         self.population = Population(config)
@@ -68,7 +70,11 @@ class psoCNN:
                 print("New gBest measure: " + str(self.gBest_measure[0]))
 
                 self.gBest.model_compile(config.dropout)
-                test_metrics = self.gBest.model_evaluate(self.test_dl)
+                if self.train:
+                    test_metrics = self.gBest.model_evaluate(self.test_dl)
+                else:
+                    test_metrics = (0, 0)
+                    
                 self.gBest_test_acc[0] = test_metrics[1]
                 print("New gBest test acc: " + str(self.gBest_acc[0]))
 
@@ -123,23 +129,28 @@ class psoCNN:
                 pBest_acc = self.population.particle[j].pBest.acc
                 pBest_measure = self.population.particle[j].pBest.measure()
 
-                if f_test >= pBest_measure:
+                if f_test > pBest_measure:
                     print("Found a new pBest.")
-                    print("Current acc: " + str(f_test))
-                    print("Past pBest acc: " + str(pBest_acc))
+                    print("Current measure: " + str(f_test))
+                    print("Past pBest measure: " + str(pBest_measure))
                     pBest_acc = acc
                     self.population.particle[j].pBest = deepcopy(
                         self.population.particle[j])
 
-                    if pBest_measure >= gBest_measure:
+                    if pBest_measure > gBest_measure:
                         print("Found a new gBest.")
                         gBest_acc = pBest_acc
                         gBest_measure = pBest_measure
                         self.gBest = deepcopy(self.population.particle[j])
 
                         self.gBest.model_compile(dropout_rate)
-                        acc, score = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
-                        test_metrics = self.gBest.model_evaluate(self.test_dl)
+                        if self.train:
+                            acc, score = self.gBest.model_fit(self.train_dl, epochs=self.epochs)
+                            test_metrics = self.gBest.model_evaluate(self.test_dl)
+                        else: 
+                            acc, score = 0, 0
+                            test_metrics = 0, 0
+                            
                         self.gBest.model_delete()
                         gBest_test_acc = test_metrics[1]
 

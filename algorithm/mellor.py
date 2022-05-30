@@ -5,13 +5,14 @@ from config import Config
 from scipy import stats
 
 # Reproducibility
+config = Config()
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-random.seed(0)
-np.random.seed(0)
-torch.manual_seed(0)
+random.seed(config.seed)
+np.random.seed(config.seed)
+torch.manual_seed(config.seed)
 
-config = Config()
+
 
 def get_batch_jacobian(net, x, target):
     net.zero_grad()

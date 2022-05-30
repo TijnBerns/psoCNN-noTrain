@@ -2,7 +2,7 @@
 #SBATCH --partition=csedu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=16G
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=4
 #SBATCH --time=24:00:00
 #SBATCH --output=./logs/%J.out
 #SBATCH --error=./logs/%J.err
