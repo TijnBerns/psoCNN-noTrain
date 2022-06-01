@@ -133,7 +133,9 @@ class psoCNN:
                     print("Found a new pBest.")
                     print("Current measure: " + str(f_test))
                     print("Past pBest measure: " + str(pBest_measure))
+                    
                     pBest_acc = acc
+                    pBest_measure = f_test
                     self.population.particle[j].pBest = deepcopy(
                         self.population.particle[j])
 

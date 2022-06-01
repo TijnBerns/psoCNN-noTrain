@@ -266,6 +266,7 @@ class Particle():
             score = -inf
             
         self.model_delete()
+        torch.cuda.empty_cache()
         self.model_compile(0.5)
         
         if self.train:

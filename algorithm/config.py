@@ -7,21 +7,21 @@ class Config():
         self.version = 5
         self.dataset: str = "cifar10"
         # self.dataset: str = "mnist"
-        self.seed = 2021
+        self.seed = self.version
         self.results_path: str = f"../results/{self.dataset}_{self.version}/"
         self.device = torch.device(
             "cuda") if torch.cuda.is_available() else torch.device("cpu")
         # self.device = torch.device("cpu")
 
         ######## Algorithm parameters ##################
-        # self.type = "regular"
+        # self.particle_type = "regular"
         self.particle_type = "mellor"
         # self.type = "ntk"
         self.train = False
         
         self.number_runs: int = 1
-        self.number_iterations: int = 20
-        self.population_size: int = 10
+        self.number_iterations: int = 160
+        self.population_size: int = 80
 
         self.batch_size_pso: int = 32
         self.batch_size_full_training: int = 32
